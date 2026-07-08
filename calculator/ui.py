@@ -18,10 +18,10 @@ class CalculatorUI:
 
         self.expression = ""
 
-        MenuManager.create(self.window)
+        MenuManager.create(self.window, self)
 
         KeyboardManager.bind(self.window, self)
-
+        self.window.bind("<Control-c>", self.copy_result)
         self.display = tk.Entry(
             self.window,
             font=("Arial", 24),
@@ -40,7 +40,7 @@ class CalculatorUI:
         right = tk.Frame(body)
         right.pack(side="right", fill="y")
 
-        self.history = HistoryManager(right)
+        self.history = HistoryManager(right, self)
 
         self.create_buttons(left)
 
@@ -77,8 +77,19 @@ class CalculatorUI:
                     parent,
                     text=text,
                     font=("Arial", 20),
-                    command=command
+                    command=command,
+                    width=5,
+                    height=2
                 )
+
+                if text == "=":
+                    button.config(bg="#4CAF50", fg="white")
+
+                elif text == "C":
+                    button.config(bg="#F44336", fg="white")
+
+                elif text == "DEL":
+                    button.config(bg="#FF9800", fg="white")
 
                 button.grid(
                     row=r,
@@ -87,7 +98,17 @@ class CalculatorUI:
                     padx=3,
                     pady=3
                 )
+                button.bind(
+                    "<Enter>",
+                    lambda event, b=button: b.config(relief="raised")
+                )
 
+                button.bind(
+                    "<Leave>",
+                    lambda event, b=button: b.config(relief="groove")
+                )
+
+                button.config(relief="groove")
         for i in range(5):
             parent.grid_rowconfigure(i, weight=1)
 
@@ -116,7 +137,12 @@ class CalculatorUI:
         self.update_display()
 
         if expression and result not in ("Error", "Cannot divide by zero"):
+
             self.history.add(expression, result)
+
+            self.display.selection_range(0, tk.END)
+
+            self.display.icursor(tk.END)
 
     def clear(self):
 
@@ -129,6 +155,14 @@ class CalculatorUI:
         self.expression = self.expression[:-1]
 
         self.update_display()
+
+    def copy_result(self, event=None):
+
+        self.window.clipboard_clear()
+
+        self.window.clipboard_append(self.expression)
+
+        self.window.update()
 
     def run(self):
 
