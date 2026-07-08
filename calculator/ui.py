@@ -1,17 +1,26 @@
 import tkinter as tk
 
 from calculator.engine import CalculatorEngine
+from calculator.menu import MenuManager
+from calculator.history import HistoryManager
+from calculator.keyboard import KeyboardManager
 
 
 class CalculatorUI:
+
     def __init__(self):
+
         self.window = tk.Tk()
 
         self.window.title("Smart Calculator Pro")
-        self.window.geometry("400x600")
+        self.window.geometry("650x600")
         self.window.resizable(False, False)
 
         self.expression = ""
+
+        MenuManager.create(self.window)
+
+        KeyboardManager.bind(self.window, self)
 
         self.display = tk.Entry(
             self.window,
@@ -22,32 +31,26 @@ class CalculatorUI:
 
         self.display.pack(fill="x", padx=10, pady=10)
 
-        self.create_buttons()
+        body = tk.Frame(self.window)
+        body.pack(expand=True, fill="both")
 
-        # 키보드 지원
-        self.window.bind("<Return>", lambda event: self.calculate())
-        self.window.bind("<BackSpace>", lambda event: self.delete())
-        self.window.bind("<Escape>", lambda event: self.clear())
+        left = tk.Frame(body)
+        left.pack(side="left", expand=True, fill="both")
 
-    # --------------------
-    # 버튼 생성
-    # --------------------
+        right = tk.Frame(body)
+        right.pack(side="right", fill="y")
 
-    def create_buttons(self):
+        self.history = HistoryManager(right)
 
-        frame = tk.Frame(self.window)
-        frame.pack(expand=True, fill="both")
+        self.create_buttons(left)
+
+    def create_buttons(self, parent):
 
         buttons = [
-
             ["C", "DEL", "/", "*"],
-
             ["7", "8", "9", "-"],
-
             ["4", "5", "6", "+"],
-
             ["1", "2", "3", "="],
-
             ["0", ".", "", ""]
         ]
 
@@ -59,56 +62,37 @@ class CalculatorUI:
                     continue
 
                 if text == "=":
-
                     command = self.calculate
 
                 elif text == "C":
-
                     command = self.clear
 
                 elif text == "DEL":
-
                     command = self.delete
 
                 else:
-
                     command = lambda t=text: self.press(t)
 
                 button = tk.Button(
-
-                    frame,
-
+                    parent,
                     text=text,
-
                     font=("Arial", 20),
-
                     command=command
-
                 )
 
                 button.grid(
-
                     row=r,
-
                     column=c,
-
                     sticky="nsew",
-
                     padx=3,
-
                     pady=3
-
                 )
 
         for i in range(5):
-            frame.grid_rowconfigure(i, weight=1)
+            parent.grid_rowconfigure(i, weight=1)
 
         for i in range(4):
-            frame.grid_columnconfigure(i, weight=1)
-
-    # --------------------
-    # 버튼 입력
-    # --------------------
+            parent.grid_columnconfigure(i, weight=1)
 
     def press(self, value):
 
@@ -116,31 +100,23 @@ class CalculatorUI:
 
         self.update_display()
 
-    # --------------------
-    # 화면 업데이트
-    # --------------------
-
     def update_display(self):
 
         self.display.delete(0, tk.END)
-
         self.display.insert(tk.END, self.expression)
-
-    # --------------------
-    # 계산
-    # --------------------
 
     def calculate(self):
 
-        result = CalculatorEngine.calculate(self.expression)
+        expression = self.expression
+
+        result = CalculatorEngine.calculate(expression)
 
         self.expression = result
 
         self.update_display()
 
-    # --------------------
-    # 전체 삭제
-    # --------------------
+        if expression and result not in ("Error", "Cannot divide by zero"):
+            self.history.add(expression, result)
 
     def clear(self):
 
@@ -148,19 +124,11 @@ class CalculatorUI:
 
         self.update_display()
 
-    # --------------------
-    # 한 글자 삭제
-    # --------------------
-
     def delete(self):
 
         self.expression = self.expression[:-1]
 
         self.update_display()
-
-    # --------------------
-    # 실행
-    # --------------------
 
     def run(self):
 
